@@ -31,6 +31,7 @@
         <!--end::Toolbar-->
     </div>
     <!--end::Brand-->
+
     <!--begin::Aside Menu-->
     <div class="aside-menu-wrapper flex-column-fluid" id="kt_aside_menu_wrapper">
         <!--begin::Menu Container-->
@@ -59,14 +60,16 @@
                     <div class="menu-submenu">
                         <i class="menu-arrow"></i>
                         <ul class="menu-subnav">
-                            <li class="menu-item" aria-haspopup="true">
-                                <a href="{{route('admin_course_list')}}" class="menu-link">
-                                    <i class="menu-bullet menu-bullet-dot">
-                                        <span></span>
-                                    </i>
-                                    <span class="menu-text">Diplomados</span>
-                                </a>
-                            </li>
+                            @can('admin_course_list')
+                                <li class="menu-item" aria-haspopup="true">
+                                    <a href="{{route('admin_course_list')}}" class="menu-link">
+                                        <i class="menu-bullet menu-bullet-dot">
+                                            <span></span>
+                                        </i>
+                                        <span class="menu-text">Diplomados</span>
+                                    </a>
+                                </li>
+                            @endcan
                             <li class="menu-item" aria-haspopup="true">
                                 <a href="{{route('admin_index_macurricular')}}" class="menu-link">
                                     <i class="menu-bullet menu-bullet-dot">
@@ -129,27 +132,29 @@
                     </div>
                 </li>
                 
-                
-                <li class="menu-item menu-item-submenu" aria-haspopup="true" data-menu-toggle="hover">
-                    <a href="javascript:;" class="menu-link menu-toggle">
-                        <i class="menu-icon flaticon-signs-1"></i>
-                        <span class="menu-text">Registros</span>
-                        <i class="menu-arrow"></i>
-                    </a>
-                    <div class="menu-submenu">
-                        <i class="menu-arrow"></i>
-                        <ul class="menu-subnav">
-                            <li class="menu-item" aria-haspopup="true">
-                                <a href="{{route('admin_personas')}}" class="menu-link">
-                                    <i class="menu-bullet menu-bullet-dot">
-                                        <span></span>
-                                    </i>
-                                    <span class="menu-text">Persona</span>
-                                </a>                                
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+                @can('admin_personas')
+                    <li class="menu-item menu-item-submenu" aria-haspopup="true" data-menu-toggle="hover">
+                        <a href="javascript:;" class="menu-link menu-toggle">
+                            <i class="menu-icon flaticon-signs-1"></i>
+                            <span class="menu-text">Registros</span>
+                            <i class="menu-arrow"></i>
+                        </a>
+
+                        <div class="menu-submenu">
+                            <i class="menu-arrow"></i>
+                            <ul class="menu-subnav">
+                                <li class="menu-item" aria-haspopup="true">
+                                    <a href="{{route('admin_personas')}}" class="menu-link">
+                                        <i class="menu-bullet menu-bullet-dot">
+                                            <span></span>
+                                        </i>
+                                        <span class="menu-text">Persona</span>
+                                    </a>                                
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                @endcan
 
                 <li class="menu-section">
                     <h4 class="menu-text">EXTRAS</h4>
@@ -184,6 +189,7 @@
                             <span class="menu-text">Roles y Permisos</span>
                             <i class="menu-arrow"></i>
                         </a>
+
                         <div class="menu-submenu">
                             <i class="menu-arrow"></i>
                             <ul class="menu-subnav">

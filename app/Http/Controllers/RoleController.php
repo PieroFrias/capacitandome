@@ -10,7 +10,11 @@ class RoleController extends Controller
 {
     public function __construct()
     {
-        // $this->middleware('auth');
+        $this->middleware('auth');
+        $this->middleware('can:admin.listar.roles')->only('listarRoles');
+        $this->middleware('can:admin.crearEditar.roles')->only('guardarEditarRol');
+        $this->middleware('can:admin.cambiarEstado.roles')->only('cambiarEstadoRol');
+
         // $this->middleware([
         //     'permission:roles.index',
         //     'permission:roles.show'

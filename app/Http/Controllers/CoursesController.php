@@ -36,7 +36,30 @@ use App\Http\Requests\TemasRequest;
 use App\Http\Requests\ComunidadRequest;
 use App\Http\Requests\DocentesRequest;
 
-class CoursesController extends Controller {
+class CoursesController extends Controller 
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('can:admin_course_list')->only('getAdmin', 'getListarCuorsesPaginate');
+        $this->middleware('can:admin_course_nuevo')->only('getNuevo', 'postGuardarSeccion');
+        $this->middleware('can:admin_course_edit')->only('getEditar', 'postEditarCurso');
+        $this->middleware('can:change_status_course')->only('getcambiarEstadoSeccion');
+
+        $this->middleware('can:seccion_listar_agregar')->only('getAgregarSecciones', 'postGuardarSeccion', 'getMostrarSeccion', 'getEditar', 'postEditarCurso');
+        $this->middleware('can:seccion_cambiar_estado')->only('getcambiarEstadoSeccion');
+
+        // $this->middleware([
+        //     'permission:roles.index',
+        //     'permission:roles.show'
+        // ]);
+    }
+
+    /*************************************************************/
+    /****************** CRUSOS CURSOS CURSOS *********************/
+    /*************************************************************/
+    /*************************************************************/
+
     public function getAdmin(Request $request)
     {
         return view('admin.course.list');
@@ -81,209 +104,17 @@ class CoursesController extends Controller {
         
     }
 
-    /*************************************************************/
-    /************** SECCIONES SECCIONES SECCIONES ****************/
-    /*************************************************************/
-    /*************************************************************/
-
-    public function getAgregarSecciones($idcurso = 1)
+    public function getCambiarEstadoCurso($idcurso, $estado)
     {
-        $curso = Curso::with(['Secciones' => function($query) {
-            return $query;
-        }])->activos()->where('idcurso', $idcurso)->first();     
+        $curso = Curso::where('idcurso', $idcurso)->first();
+        $curso->estado = $estado;
+        $curso->save();
 
-        if ($curso) {
-            return view('admin.course.create.secciones', compact('curso'));
-        }else{
-            // abort(404);
-            return back();
-        }
+        //return redirect()->back();
+        return json_encode(["status" => true, "message" => "Se cambió el estado del registro"]);
     }
 
-    // Para actualizar la tabla dinámicamente cuando se cambie el estado de alguna sección
-    public function obtenerSecciones($idcurso = 1)
-    {
-        $curso = Curso::with(['Secciones' => function($query) {
-            return $query;
-        }])->activos()->where('idcurso', $idcurso)->first();     
-
-        if ($curso) {
-            return view('admin.course.create.secciones_table', compact('curso'));
-        }else{
-            // abort(404);
-            return back();
-        }
-    }
-
-    public function postGuardarSeccion(SeccionRequest $request)
-    {
-        $idseccion = $request->input('idseccion');
-
-        if ($idseccion != null || $idseccion != '') {
-            $seccion = Seccion::where('idseccion', $idseccion)->first();
-
-            if ($seccion) {
-                $seccion->titulo            = $request->input('titulo');
-                $seccion->nombre_seccion    =  $request->input('nombre_seccion');
-                $seccion->descripcion       = $request->input('descripcion');
-                $seccion->entregable        = $request->input('entregable');
-                $seccion->save();
-
-                return redirect()->back()->with('success','Registro editado satisfactoriamente');
-            }else{
-                return redirect()->back()->with('error','No existe esta seccion');
-            }
-        }else{
-            $seccion = Seccion::firstOrCreate(
-                [
-                    'idcurso' => $request->input('idcurso'),
-                    'titulo'  => $request->input('titulo')
-                ],
-                [
-                    'nombre_seccion'=>  $request->input('nombre_seccion'),
-                    'descripcion'   =>  $request->input('descripcion'),
-                    'url_video'     => $request->input('url_video'),
-                    'entregable'    => $request->input('entregable')
-                ]
-            );
-
-            return redirect()->back()->with('success','Registro creado satisfactoriamente');
-        }
-    }
-
-    public function getMostrarSeccion($idseccion)
-    {
-        $seccion = Seccion::where('idseccion', $idseccion)->first();
-
-        return json_encode($seccion);
-    }
-
-    // public function getEliminarSeccion($idseccion)
-    // {
-    //     $seccion = Seccion::where('idseccion', $idseccion)->first();
-    //     $seccion->estado = 0;
-    //     $seccion->save();
-
-    //     return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-    // }
-
-    public function getcambiarEstadoSeccion($idseccion, $estado)
-    {
-        // $seccion->estado = 0;
-        // $seccion->save();
-        // return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-
-        $seccion = Seccion::where('idseccion', $idseccion)->first();
-
-        $seccion->estado = $estado;
-
-        $seccion->save();
-
-        // return redirect()->back();
-        return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-    }
-
-    /************************************************************ */
-    /************** CLASE CLASE CLASE *********************** */
-    /************************************************************ */
-    /************************************************************ */
-
-    public function getAgregarClases($idseccion = 1)
-    {
-        $seccion = Seccion::with(['Clases' => function($query) {
-           return $query;
-        }])->activos()->where('idseccion', $idseccion)->first();
-
-        if ($seccion) {
-            return view('admin.course.create.clases', compact('seccion'));
-        }else{
-            // abort(404);
-            return back();
-        }
-    }
-
-    public function obtenerClases($idseccion = 1)
-    {
-        $seccion = Seccion::with(['Clases' => function($query) {
-           return $query;
-        }])->activos()->where('idseccion', $idseccion)->first();
-
-        if ($seccion) {
-            return view('admin.course.create.clases_table', compact('seccion'));
-        }else{
-            // abort(404);
-            return back();
-        }
-    }
-
-    public function postGuardarClase(ClaseRequest $request)
-    {
-        $idclase = $request->input('idclase');
-
-        if ($idclase != null || $idclase != '') {
-
-            $clase = Clase::where('idclase', $idclase)->first();
-
-            if ($clase) {
-                $clase->titulo        = $request->input('titulo');
-                $clase->descripcion   = $request->input('descripcion');
-                $clase->url_video     = $request->input('url_video');
-                $clase->minutos_video = $request->input('minutos_video');
-                $clase->save();
-
-                return redirect()->back()->with('success','Registro editado satisfactoriamente');
-            }else{
-                return redirect()->back()->with('error','No existe esta clase');
-            }
-        }else{
-            $clase = Clase::firstOrCreate(
-                [
-                    'idseccion' => $request->input('idseccion'),
-                    'titulo'    => $request->input('titulo')
-                ],
-                [
-                    'descripcion'   => $request->input('descripcion'),
-                    'url_video'     => $request->input('url_video'),
-                    'minutos_video' => $request->input('minutos_video')
-                ]
-            );
-
-            return redirect()->back()->with('success','Registro creado satisfactoriamente');
-        }
-    }
-
-    public function getMostrarClase($idclase)
-    {
-        $clase = Clase::where('idclase', $idclase)->first();
-
-        return json_encode($clase);
-    }
-
-    // public function getEliminarClase($idclase)
-    // {
-    //     $clase = Clase::where('idclase', $idclase)->first();
-    //     $clase->estado = 0;
-    //     $clase->save();
-    //     return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-    // }
-
-    public function getCambiarEstadoClase($idclase, $estado)
-    {
-        $clase = Clase::where('idclase', $idclase)->first();
-
-        $clase->estado = $estado;
-
-        $clase->save();
-
-        // return redirect()->back();
-        return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-    }
-
-    /************************************************************ */
-    /************** CURSO CURSO CURSO CURSO *********************** */
-    /************************************************************ */
-    /************************************************************ */
-    #CoursesRequest
+    ## CoursesRequest ##
     public function postGuardarCurso(CoursesRequest $request) {
         // return json_encode($request);
 
@@ -387,7 +218,185 @@ class CoursesController extends Controller {
             return $nuevo_nombre;
     }
 
-    /* REQUISITOS DEL CURSO */
+    /*************************************************************/
+    /************** SECCIONES SECCIONES SECCIONES ****************/
+    /*************************************************************/
+    /*************************************************************/
+
+    public function getAgregarSecciones($idcurso = 1)
+    {
+        $curso = Curso::with(['Secciones' => function($query) {
+            return $query;
+        }])->activos()->where('idcurso', $idcurso)->first();     
+
+        if ($curso) {
+            return view('admin.course.create.secciones', compact('curso'));
+        }else{
+            // abort(404);
+            return back();
+        }
+    }
+
+    // Para actualizar la tabla dinámicamente cuando se cambie el estado de alguna sección
+    public function obtenerSecciones($idcurso = 1)
+    {
+        $curso = Curso::with(['Secciones' => function($query) {
+            return $query;
+        }])->activos()->where('idcurso', $idcurso)->first();     
+
+        if ($curso) {
+            return view('admin.course.create.secciones_table', compact('curso'));
+        }else{
+            // abort(404);
+            return back();
+        }
+    }
+
+    public function postGuardarSeccion(SeccionRequest $request)
+    {
+        $idseccion = $request->input('idseccion');
+
+        if ($idseccion != null || $idseccion != '') {
+            $seccion = Seccion::where('idseccion', $idseccion)->first();
+
+            if ($seccion) {
+                $seccion->titulo            = $request->input('titulo');
+                $seccion->nombre_seccion    =  $request->input('nombre_seccion');
+                $seccion->descripcion       = $request->input('descripcion');
+                $seccion->entregable        = $request->input('entregable');
+                $seccion->save();
+
+                return redirect()->back()->with('success','Registro editado satisfactoriamente');
+            }else{
+                return redirect()->back()->with('error','No existe esta seccion');
+            }
+        }else{
+            $seccion = Seccion::firstOrCreate(
+                [
+                    'idcurso' => $request->input('idcurso'),
+                    'titulo'  => $request->input('titulo')
+                ],
+                [
+                    'nombre_seccion'=>  $request->input('nombre_seccion'),
+                    'descripcion'   =>  $request->input('descripcion'),
+                    'url_video'     => $request->input('url_video'),
+                    'entregable'    => $request->input('entregable')
+                ]
+            );
+
+            return redirect()->back()->with('success','Registro creado satisfactoriamente');
+        }
+    }
+
+    public function getMostrarSeccion($idseccion)
+    {
+        $seccion = Seccion::where('idseccion', $idseccion)->first();
+
+        return json_encode($seccion);
+    }
+
+    public function getcambiarEstadoSeccion($idseccion, $estado)
+    {
+        $seccion = Seccion::where('idseccion', $idseccion)->first();
+        $seccion->estado = $estado;
+        $seccion->save();
+
+        return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
+    }
+
+    /************************************************************/
+    /************** CLASE CLASE CLASE ***************************/
+    /************************************************************/
+    /************************************************************/
+
+    public function getAgregarClases($idseccion = 1)
+    {
+        $seccion = Seccion::with(['Clases' => function($query) {
+           return $query;
+        }])->activos()->where('idseccion', $idseccion)->first();
+
+        if ($seccion) {
+            return view('admin.course.create.clases', compact('seccion'));
+        }else{
+            // abort(404);
+            return back();
+        }
+    }
+
+    public function obtenerClases($idseccion = 1)
+    {
+        $seccion = Seccion::with(['Clases' => function($query) {
+           return $query;
+        }])->activos()->where('idseccion', $idseccion)->first();
+
+        if ($seccion) {
+            return view('admin.course.create.clases_table', compact('seccion'));
+        }else{
+            // abort(404);
+            return back();
+        }
+    }
+
+    public function postGuardarClase(ClaseRequest $request)
+    {
+        $idclase = $request->input('idclase');
+
+        if ($idclase != null || $idclase != '') {
+
+            $clase = Clase::where('idclase', $idclase)->first();
+
+            if ($clase) {
+                $clase->titulo        = $request->input('titulo');
+                $clase->descripcion   = $request->input('descripcion');
+                $clase->url_video     = $request->input('url_video');
+                $clase->minutos_video = $request->input('minutos_video');
+                $clase->save();
+
+                return redirect()->back()->with('success','Registro editado satisfactoriamente');
+            }else{
+                return redirect()->back()->with('error','No existe esta clase');
+            }
+        }else{
+            $clase = Clase::firstOrCreate(
+                [
+                    'idseccion' => $request->input('idseccion'),
+                    'titulo'    => $request->input('titulo')
+                ],
+                [
+                    'descripcion'   => $request->input('descripcion'),
+                    'url_video'     => $request->input('url_video'),
+                    'minutos_video' => $request->input('minutos_video')
+                ]
+            );
+
+            return redirect()->back()->with('success','Registro creado satisfactoriamente');
+        }
+    }
+
+    public function getMostrarClase($idclase)
+    {
+        $clase = Clase::where('idclase', $idclase)->first();
+
+        return json_encode($clase);
+    }
+
+    public function getCambiarEstadoClase($idclase, $estado)
+    {
+        $clase = Clase::where('idclase', $idclase)->first();
+
+        $clase->estado = $estado;
+
+        $clase->save();
+
+        // return redirect()->back();
+        return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
+    }
+
+    /************************************************************/
+    /************* REQUISITOS REQUISITOS REQUISITOS *************/
+    /************************************************************/
+    /************************************************************/
+
     public function requisitosIndex($id) {
         $curso = Curso::where('idcurso', $id)->first();
 
@@ -447,9 +456,12 @@ class CoursesController extends Controller {
         //return redirect()->back();
         return json_encode(["status" => true, "message" => "Estado del requisito cambiado."]);
     }
-    /* FIN REQUISITOS */
     
-    /* TEMAS DEL CURSO */
+    /************************************************************/
+    /******************** TEMAS TEMAS TEMAS *********************/
+    /************************************************************/
+    /************************************************************/
+
     public function temasIndex($id) {
         $curso = Curso::where('idcurso',$id)->first();
         if ($curso) {
@@ -499,21 +511,18 @@ class CoursesController extends Controller {
     }
 
     public function cambiarEstadoTemas($idtemas, $estado) {
-        // $temas = CursoTema::find($idtemas);
-        // $temas->delete();
-
         $tema = CursoTema::where('idcurso_tema', $idtemas)->first();
-
         $tema->estado = $estado;
-
         $tema->save();
 
-        //return redirect()->back();
         return json_encode(["status" => true, "message" => "Estado cambiado"]);
     }
-    /* FIN TEMAS */
     
-    /* COMUNIDAD DEL CURSO */
+    /************************************************************/
+    /************** COMUNIDAD COMUNIDAD COMUNIDAD ***************/
+    /************************************************************/
+    /************************************************************/
+
     public function comunidadIndex($id) {
         $curso = Curso::where('idcurso',$id)->first();
 
@@ -573,9 +582,12 @@ class CoursesController extends Controller {
         // return redirect()->back();
         return json_encode(["status" => true, "message" => "Comunidad eliminada"]);
     }
-    /* FIN COMUNIDAD */
 
-    /* DOCENTES DEL CURSO */
+    /************************************************************/
+    /**************** DOCENTES DOCENTES DOCENTES ****************/
+    /************************************************************/
+    /************************************************************/
+
     public function docentesIndex($id) {
         $curso          = Curso::where('idcurso', $id)->first();
 
@@ -648,50 +660,20 @@ class CoursesController extends Controller {
         $docentes = DB::table('curso_docente_usuario')->where('iddocente',$iddocentes)->first();
         return \json_encode($docentes);
     }
-
-    // public function eliminarDocente($iddocentes) {
-    //     $docentes = DB::table('curso_docente_usuario')->where('iddocente',$iddocentes)->delete();
-    //     return json_encode(["status" => true, "message" => "Eliminado"]);
-    // }
     
     public function cambiarEstadoDocente($iddocente, $estado) {
-        // $docente = DB::table('curso_docente_usuario')->where('iddocente',$iddocente)->first();
-        // $docente->estado = $estado;
-        // $docente->save();
-
         DB::table('curso_docente_usuario')
                         ->where('iddocente',$iddocente)
                         ->update(['estado' => $estado]);
 
-        //return redirect()->back();
         return json_encode(["status" => true, "message" => "Eliminado"]);
     }    
-    /* FIN DOCENTES */
 
-    // public function getDesactivarCurso($idcurso)
-    // {
-    //     $curso = Curso::where('idcurso', $idcurso)->first();
+    /************************************************************/
+    /************ ESTUDIANTES ESTUDIANTES ESTUDIANTES ***********/
+    /************************************************************/
+    /************************************************************/
 
-    //     $curso->estado = 0;
-    //     $curso->save();
-
-    //     return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-    // }
-
-    /** Cambiar estados de los cursos **/
-    public function getCambiarEstadoCurso($idcurso, $estado)
-    {
-        $curso = Curso::where('idcurso', $idcurso)->first(); 
-
-        $curso->estado = $estado;
-
-        $curso->save();
-
-        //return redirect()->back();
-        return json_encode(["status" => true, "message" => "Se cambió el estado del registro"]);
-    }
-
-    // Listar estudiantes
     public function listarEstudiantes($idcurso)
     {
         $curso = Curso::where('idcurso', $idcurso)->first();
@@ -930,12 +912,6 @@ class CoursesController extends Controller {
         }
 
     }
-
-    // public function eliminarExamen($idExam){
-    //     $comunidad = Examen::where('idexamen', $idExam)->delete();
-
-    //     return json_encode(['status' => true, 'message' => 'Exámen eliminado']);
-    // }
 
     public function cambiarEstadoExamen($idExam, $estado) {
         $examen = Examen::where('idexamen', $idExam)->first();

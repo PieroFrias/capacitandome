@@ -8,7 +8,7 @@
             background-color: #f64e60;
             color: #ffffff;
         }
-    </style>
+    </style>|
 @endsection
 
 @section('subheader')
@@ -79,26 +79,40 @@
                 </div>
 
                 <div class="form-row d-flex align-items-center">
-                    <div class="col-md-9 col-xs-12">
-                        <div class="form-group mb-9">
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    @if (auth()->user()->hasRole('Admin'))
+                        <div class="col-md-9 col-xs-12">
+                            <div class="form-group mb-9">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Buscar curso..." id="buscar_curso">
                                 </div>
-                                <input type="text" class="form-control" placeholder="Buscar curso..." id="buscar_curso">
+                                                                                
                             </div>
-                                                                            
                         </div>
-                    </div>
 
-                    <div class="col-md-3 col-xs-12">
-                        <div class="custom-control custom-switch mb-9 d-flex align-items-center">
-                            <div class="mx-auto">
-                                <input type="checkbox" class="custom-control-input" id="switch1">
-                                <label class="custom-control-label" for="switch1">Mostrar cursos deshabilitados</label>
+                        <div class="col-md-3 col-xs-12">
+                            <div class="custom-control custom-switch mb-9 d-flex align-items-center">
+                                <div class="mx-auto">
+                                    <input type="checkbox" class="custom-control-input" id="switch1">
+                                    <label class="custom-control-label" for="switch1">Mostrar cursos deshabilitados</label>
+                                </div>
+                            </div> 
+                        </div>
+                    @else
+                        <div class="col-md-12 col-xs-12">
+                            <div class="form-group mb-9">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" placeholder="Buscar curso..." id="buscar_curso">
+                                </div>
+                                                                                
                             </div>
-                        </div> 
-                    </div>                     
+                        </div>
+                    @endif                     
                 </div>
 
                 {{-- Mensajes de éxito o error al crear, editar o eliminar un curso --}}

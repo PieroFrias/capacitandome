@@ -20,10 +20,14 @@ use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Log;
 use App\http\Controllers\Helpers;
 
-class PersonaController extends Controller {
-
+class PersonaController extends Controller 
+{
     public function __construct() {
-        //$this->middleware('auth');
+        $this->middleware('auth');
+        $this->middleware('can:admin_personas')->only('index', 'paginatePersona');
+        $this->middleware('can:admin_personas_create')->only('create', 'store');
+        $this->middleware('can:admin_personas_edit')->only('edit', 'update');
+        $this->middleware('can:admin_personas_cambiarEstado')->only('cambiarEstadoPersona');
     }
    
     public function index(Request $request) {
