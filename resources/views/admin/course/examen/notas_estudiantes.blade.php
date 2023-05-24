@@ -1,6 +1,6 @@
 @extends('layouts.app_admin')
 
-@section('tituloPagina','Estudiantes y sus Notas')
+@section('tituloPagina', 'Estudiantes y sus Notas')
 
 @section('styles')
     <link href="{{ asset('/recursos/admin/assets/css/pages/wizard/wizard-1.css') }}" rel="stylesheet" type="text/css" />
@@ -17,7 +17,7 @@
             </div>
 
             <div class="d-flex align-items-center">
-                <a href="{{route('admin_inicio')}}" class="btn btn-light-primary font-weight-bolder btn-sm mr-2"><i class="fa fa-home"></i> Inicio</a>
+                <a href="{{ route('admin_inicio') }}" class="btn btn-light-primary font-weight-bolder btn-sm mr-2"><i class="fa fa-home"></i> Inicio</a>
                 <a href="{{ asset('/admin/course/examen/' . $examen->idcurso) }}" class="btn btn-light-primary font-weight-bolder btn-sm">
                     <i class="fas fa-list"></i>
                     Ver Examenes
@@ -89,9 +89,6 @@
 @endsection
 
 @section('modal')
-
-{{--  --}}
-
 @endsection
 
 @section('script')

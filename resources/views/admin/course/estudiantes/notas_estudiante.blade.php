@@ -1,4 +1,3 @@
-
 <div class="modal-body">
     <div class="col-md-12 mb-4">
         <h5 class=" text-center m-0">{{ $user->Persona->nombre }} {{ $user->Persona->apellidos }}</h5>
@@ -30,8 +29,6 @@
                                         $cant = count($seccion->Examenes);
                                     @endphp
                                     @foreach ($seccion->Examenes as $key => $item)
-
-
                                         <tr>
                                             <td>{{ (($key++) + 1) }}</td>
                                             <td>{{ $item->titulo }}</td>
@@ -56,7 +53,6 @@
                                                 @endif
                                             </td>
                                         </tr>
-
                                     @endforeach
                                     <tr class="table-success">
                                         <td colspan="3"><b>Promedio</b></td>
@@ -74,7 +70,6 @@
             </div>
         </div>
     @endforeach
-
 
     {{-- <table class="table table-hover">
         <thead class="table-primary">

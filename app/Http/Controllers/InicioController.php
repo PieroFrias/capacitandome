@@ -18,6 +18,7 @@ class InicioController extends Controller {
         ->orderBy('idmensajes', 'desc')
         ->limit(3)
         ->get();
+
         return view('admin.inicio.inicio', ['mensajes' => $mensajes]);
     }
 
@@ -36,15 +37,14 @@ class InicioController extends Controller {
                     $query->where("p.apellidos","LIKE","%{$search}%");
                 }
                 $pagos = $query->orderBy('venta.idventa', 'desc')->paginate(20);
+
         return view('admin.inicio.pagosPaginate', ['pagos' => $pagos,'search' => $search])->render();
     }
 
     public function habilitarVenta($idventa) {
-
         $ventaFind = Venta::where('idventa', $idventa)->first();
 
         if (!empty($ventaFind)) {
-
             $venta           = Venta::find($idventa);
             $venta->estado   = 1;
             $venta->save();
@@ -60,27 +60,24 @@ class InicioController extends Controller {
                 ];
                 $correo = new ConfirmacionCursoMailable($msg);
                 $email = Mail::to($persona->correo)->send($correo);
-            }           
-            return json_encode(["status" => true, "message" => "Curso habilitado."]);
+            }       
 
+            return json_encode(["status" => true, "message" => "Curso habilitado."]);
         } else {
             return json_encode(["status" => false, "message" => "No existe esta venta."]);
         }
     }
 
     public function eliminarVenta($idventa) {
-
         $ventaFind = Venta::where('idventa', $idventa)->first();
 
         if (!empty($ventaFind)) {
-
             $venta = Venta::find($idventa);
             $venta->delete();
-            return json_encode(["status" => true, "message" => "Venta eliminada."]);
 
+            return json_encode(["status" => true, "message" => "Venta eliminada."]);
         } else {
             return json_encode(["status" => false, "message" => "No existe esta venta."]);
         }
     }
-
 }

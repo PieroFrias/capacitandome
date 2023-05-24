@@ -338,7 +338,6 @@ class CursoController extends Controller
                 ]);
             }
         } else if ($idrol == 1) {
-
             $cursosDocente_header = DB::table('curso_docente_usuario')
                 ->join('curso as c', 'c.idcurso', '=', 'curso_docente_usuario.idcurso')
                 ->join('users as u', 'u.idusuario', '=', 'curso_docente_usuario.idusuario')
@@ -346,14 +345,12 @@ class CursoController extends Controller
                 ->where('curso_docente_usuario.idusuario', '=', $idusuario)->groupBy('c.idcurso', 'c.titulo', 'c.portada')->limit(3)->get();
 
             if ($query != "") {
-
                 $cursosDocente_search = DB::table('curso_docente_usuario')
                     ->join('curso as c', 'c.idcurso', '=', 'curso_docente_usuario.idcurso')
                     ->join('users as u', 'u.idusuario', '=', 'curso_docente_usuario.idusuario')
                     ->select('c.idcurso', 'c.titulo', 'c.portada')
                     ->where([['curso_docente_usuario.idusuario', '=', $idusuario], ['c.titulo', 'LIKE', '%' . $query . '%']])->groupBy('curso_docente_usuario.idcurso')->get();
             } else {
-
                 $cursosDocente_search = DB::table('curso_docente_usuario')
                     ->join('curso as c', 'c.idcurso', '=', 'curso_docente_usuario.idcurso')
                     ->join('users as u', 'u.idusuario', '=', 'curso_docente_usuario.idusuario')

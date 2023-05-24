@@ -31,22 +31,25 @@
             <div class="row">
                 <div class="col-xs-12 col-sm-6 col-md-6 col-lg-12 col-xl-12">
                     <!--begin::Tiles Widget 2-->
-                    <div class="card card-custom bg-danger gutter-b" style="height: 130px;cursor: pointer;">
-                        <!--begin::Body-->
-                        <a href="{{route('admin_course_list')}}">
-                            <div class="card-body d-flex flex-column p-0" style="position: relative;">
-                                <!--begin::Stats-->
-                                <div class="flex-grow-1 card-spacer-x pt-6">
-                                        <div class="text-center text-inverse-danger font-weight-bold">CURSOS</div>
-                                        <div class="text-center p-5">
-                                            <i class="fa fa-book" style="font-size: 30px;color: white"></i>
-                                        </div>
+                    @can('admin_course_list')
+                        <div class="card card-custom bg-danger gutter-b" style="height: 130px;cursor: pointer;">
+                            <!--begin::Body-->
+                            <a href="{{ route('admin_course_list') }}">
+                                <div class="card-body d-flex flex-column p-0" style="position: relative;">
+                                    <!--begin::Stats-->
+                                    <div class="flex-grow-1 card-spacer-x pt-6">
+                                            <div class="text-center text-inverse-danger font-weight-bold">CURSOS</div>
+                                            <div class="text-center p-5">
+                                                <i class="fa fa-book" style="font-size: 30px;color: white"></i>
+                                            </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
-                        <!--end::Body-->
-                    </div>
+                            </a>
+                            <!--end::Body-->
+                        </div>
+                    @endcan
                     <!--end::Tiles Widget 2-->
+                    
                     <!--begin::Tiles Widget 3-->
                     <div class="card card-custom bg-success gutter-b" style="height: 130px;cursor: pointer;">
                         <!--begin::Body-->
@@ -66,21 +69,24 @@
                 </div>
                 <div class="col-xs-12 col-sm-6 col-md-6 col-lg-12 col-xl-12">
                     <!--begin::Tiles Widget 4-->
-                    <div class="card card-custom bg-warning gutter-b" style="height: 130px;cursor: pointer;">
-                        <!--begin::Body-->
-                        <a href="{{route('admin_personas')}}">
-                            <div class="card-body d-flex flex-column p-0" style="position: relative;">
-                                <div class="flex-grow-1 card-spacer-x pt-6">
-                                    <div class="text-center text-inverse-danger font-weight-bold">PERSONA</div>
-                                    <div class="text-center p-5">
-                                        <i class="fa fa-user-circle" style="font-size: 30px;color: white"></i>
+                    @can('admin_personas')
+                        <div class="card card-custom bg-warning gutter-b" style="height: 130px;cursor: pointer;">
+                            <!--begin::Body-->
+                            <a href="{{route('admin_personas')}}">
+                                <div class="card-body d-flex flex-column p-0" style="position: relative;">
+                                    <div class="flex-grow-1 card-spacer-x pt-6">
+                                        <div class="text-center text-inverse-danger font-weight-bold">PERSONA</div>
+                                        <div class="text-center p-5">
+                                            <i class="fa fa-user-circle" style="font-size: 30px;color: white"></i>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </a>
-                        <!--end::Body-->
-                    </div>
+                            </a>
+                            <!--end::Body-->
+                        </div>
+                    @endcan
                     <!--end::Tiles Widget 4-->
+                    
                     <!--begin::Tiles Widget 5-->
                     <div class="card card-custom bg-info gutter-b" style="height: 130px;cursor: pointer;">
                         <!--begin::Body-->
@@ -101,8 +107,7 @@
             </div>
             <!--begin::Mixed Widget 20-->
             <div class="row">
-               <div class="col-lg-12">
-                
+               <div class="col-lg-12">                
                 <div class="card card-custom card-stretch gutter-b">
                     <!--begin::Header-->
                     <div class="card-header border-0">

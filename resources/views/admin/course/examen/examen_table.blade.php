@@ -29,9 +29,6 @@
                 <a href="{{ asset('admin/course/mostrar/examen/' . $exam->idexamen) }}" class="btn btn-light-warning font-weight-bold btn-sm my-1" data-toggle="tooltip" data-placement="top" title="Editar">
                     <i class="fas fa-edit p-0"></i>
                 </a>
-                {{-- <a href="javascript:void(0)" onclick="desactivar({{ $exam->idexamen }})" class="btn btn-light-danger font-weight-bold btn-sm my-1" data-toggle="tooltip" data-placement="top" title="Eliminar">
-                    <i class="fas fa-times p-0"></i>
-                </a> --}}
                 @if($exam->estado == 1)
                     <a href="javascript:void(0)" onclick="cambiarEstadoExamen({{$exam->idexamen}}, 0, {{ $exam->idcurso }})" 
                         class="btn btn-light-danger font-weight-bold btn-sm my-1" data-toggle="tooltip" 

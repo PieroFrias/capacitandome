@@ -30,11 +30,11 @@ use App\Models\Venta;
 use App\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-
 use App\Http\Requests\RequisitosRequest;
 use App\Http\Requests\TemasRequest;
 use App\Http\Requests\ComunidadRequest;
 use App\Http\Requests\DocentesRequest;
+use Illuminate\Support\Facades\Auth;
 
 class CoursesController extends Controller 
 {
@@ -47,7 +47,35 @@ class CoursesController extends Controller
         $this->middleware('can:change_status_course')->only('getcambiarEstadoSeccion');
 
         $this->middleware('can:seccion_listar_agregar')->only('getAgregarSecciones', 'postGuardarSeccion', 'getMostrarSeccion', 'getEditar', 'postEditarCurso');
-        $this->middleware('can:seccion_cambiar_estado')->only('getcambiarEstadoSeccion');
+        $this->middleware('can:seccion_cambiar_estado')->only('getcambiarEstadoSeccion', 'obtenerSecciones');
+
+        $this->middleware('can:docentesCursoId')->only('docentesIndex', 'mostrarDocente', 'guardarEditarDocentes');
+        $this->middleware('can:cambiarEstadoDocente')->only('cambiarEstadoDocente', 'obtenerDocentes');
+
+        $this->middleware('can:requisitosCursoId')->only('requisitosIndex', 'mostrarRequisitos', 'guardarEditarRequisitos');
+        $this->middleware('can:cambiarEstadoRequisitosId')->only('cambiarEstadoRequisitos', 'obtenerRequisitos');
+
+        $this->middleware('can:temasCursoId')->only('temasIndex', 'mostrarTemas', 'guardarEditarTemas');
+        $this->middleware('can:cambiarEstadoTemas')->only('cambiarEstadoTemas', 'obtenerTemas');
+
+        $this->middleware('can:comunidadCursoId')->only('comunidadIndex', 'mostrarComunidad', 'guardarEditarComunidad');
+        $this->middleware('can:cambiarEstadoComunidadId')->only('cambiarEstadoComunidad', 'obtenerComunidad');
+
+        $this->middleware('can:clase_agregar')->only('getAgregarClases', 'postGuardarClase', 'getMostrarClase');
+        $this->middleware('can:clase_cambiar_estado')->only('getCambiarEstadoClase', 'obtenerClases');
+
+        $this->middleware('can:admin.estudiantes.calificacion.listar')->only('listarEstudiantes', 'listarEstudiantesCurso');
+        $this->middleware('can:admin.estudiantes.calificacion.listar.notas')->only('listarNotasUsuario');
+        $this->middleware('can:admin.estudiantes.calificacion.listar.resoluciones')->only('listarEstudianteResoluciones');
+
+        $this->middleware('can:examen_listar')->only('listarExamen');
+        $this->middleware('can:examen_agregar')->only('verFormExamen', 'mostrarExamen', 'agregarExamen');
+        $this->middleware('can:examen_listar_notas_estudiantes')->only('estudianteNotaExamen', 'listaEstudianteNotaExamen');
+        $this->middleware('can:examen_cambiar_estado')->only('cambiarEstadoExamen', 'obtenerExamen');
+
+        $this->middleware('can:preguntas_listar')->only('preguntasExamen');
+        $this->middleware('can:preguntas_guardar')->only('alternativasPregunta', 'agregarPregunta', 'mostrarPregunta');
+        $this->middleware('can:preguntas_eliminar')->only('eliminarPregunta');
 
         // $this->middleware([
         //     'permission:roles.index',
@@ -66,21 +94,29 @@ class CoursesController extends Controller
     }
 
     public function getListarCuorsesPaginate(Request $request, $estado)
-    {   
-        if ($estado == 0) {
-            $cursos = Curso::where([
-                ['titulo', 'like', "%{$request->filtro_search}%"],
-                ['tipo','=',1]
-            ])->orderBy('updated_at', 'desc')->paginate(10);
-        }
-        else {
-            $cursos = Curso::where([
-                ['titulo', 'like', "%{$request->filtro_search}%"],
-                ['tipo','=',1]
-            ])->whereIn('estado', [1, 2])->orderBy('updated_at', 'desc')->paginate(10);
+    {
+        $user = Auth::user();
+
+        $cursos = Curso::where([
+            ['titulo', 'like', "%{$request->filtro_search}%"],
+            ['tipo', '=', 1]
+        ]);
+
+        if ($user->hasRole('Admin')) {
+            if ($estado == 0) {
+                $cursos = $cursos->orderBy('updated_at', 'desc')->paginate(10);
+            } else {
+                $cursos = $cursos->whereIn('estado', [1, 2])->orderBy('updated_at', 'desc')->paginate(10);
+            }
+        } else if ($user->hasRole('Docente')) {
+            // Muestra los cursos según el docente que esté autenticado
+            $cursos = Curso::join('curso_docente_usuario', 'curso.idcurso', '=', 'curso_docente_usuario.idcurso')
+                ->join('users', 'users.idusuario', '=', 'curso_docente_usuario.idusuario')
+                ->select('curso.idcurso', 'curso.titulo', 'curso.total_clases', 'curso.hora_duracion', 'curso.precio', 'curso.plan', 'curso.estado')
+                ->where([['curso_docente_usuario.idusuario', $user->idusuario],['curso.titulo', 'LIKE', '%' . $request->filtro_search . '%']])->whereIn('curso.estado', [1, 2])->orderBy('curso.updated_at', 'desc')->paginate(10);
         }
 
-        return  view('admin.course.paginate_cursos',  ['cursos' => $cursos])->render();
+        return view('admin.course.paginate_cursos', ['cursos' => $cursos])->render();
     }
 
     public function getNuevo() {
@@ -114,7 +150,7 @@ class CoursesController extends Controller
         return json_encode(["status" => true, "message" => "Se cambió el estado del registro"]);
     }
 
-    ## CoursesRequest ##
+    ### CoursesRequest ###
     public function postGuardarCurso(CoursesRequest $request) {
         // return json_encode($request);
 
@@ -142,6 +178,15 @@ class CoursesController extends Controller
         $curso->brochure                    = $this->guardarArchivo($request,'bro_', 'brochure', 'cursos');      
 
         $curso->save();
+
+        $user = Auth::user();
+
+        if ($user->hasRole('Docente')) {
+            $docente            = new Docente();
+            $docente->idcurso   = $curso->idcurso;
+            $docente->idusuario = $user->idusuario;
+            $docente->save();
+        }
 
         return redirect('/admin/courses')->with('success','Curso creado satisfactoriamente');
     }
@@ -589,6 +634,12 @@ class CoursesController extends Controller
     /************************************************************/
 
     public function docentesIndex($id) {
+        $user = Auth::user();
+        
+        if ($user->hasRole('Docente')) {
+            $user = $user->idusuario;
+        }
+
         $curso          = Curso::where('idcurso', $id)->first();
 
         if ($curso) {
@@ -602,7 +653,7 @@ class CoursesController extends Controller
                             ->where('curso_docente_usuario.idcurso',$id)
                             ->distinct()->get();
 
-            return view('admin.course.recursos.docentes.crud', compact('curso','personas','docentes'));
+            return view('admin.course.recursos.docentes.crud', compact('curso','personas','docentes','user'));
         } else {
             return redirect('/admin/courses');
         }
@@ -638,6 +689,7 @@ class CoursesController extends Controller
 
         if ($iddocentes == NULL || $iddocentes == "") { 
             $totalDocente = Docente::where([['idcurso',$request->input('idcurso')],['idusuario',$request->input('idpersona')]])->count();
+
             if ($totalDocente == 0) {
                 $docente            = new Docente();
                 $docente->idcurso   = $request->input('idcurso');
@@ -647,11 +699,10 @@ class CoursesController extends Controller
             } else {
                 return redirect()->back()->with('error','Docente ya se encuentra registrado.');
             }
-
         } else {
             DB::table('curso_docente_usuario')
-                        ->where('iddocente',$iddocentes)
-                        ->update(['idcurso' => $request->input('idcurso'),'idusuario' => $request->input('idpersona')]);
+                ->where('iddocente',$iddocentes)
+                ->update(['idcurso' => $request->input('idcurso'),'idusuario' => $request->input('idpersona')]);
             return redirect()->back()->with('success', "Actualizado");
         }
     }
@@ -663,8 +714,8 @@ class CoursesController extends Controller
     
     public function cambiarEstadoDocente($iddocente, $estado) {
         DB::table('curso_docente_usuario')
-                        ->where('iddocente',$iddocente)
-                        ->update(['estado' => $estado]);
+            ->where('iddocente',$iddocente)
+            ->update(['estado' => $estado]);
 
         return json_encode(["status" => true, "message" => "Eliminado"]);
     }    
@@ -674,6 +725,7 @@ class CoursesController extends Controller
     /************************************************************/
     /************************************************************/
 
+    // Lista los estudiantes y sus calificaciones
     public function listarEstudiantes($idcurso)
     {
         $curso = Curso::where('idcurso', $idcurso)->first();
@@ -691,9 +743,7 @@ class CoursesController extends Controller
         $searh_estudiante = $request->searh_estudiante;
 
         $estudiantes = User::with(['Ventas', 'Persona' => function ($query){
-
                                 // return $query->orderBy('apellidos', 'DESC');
-
                             }, 'Certificados', 'ResolverExamenes', 'ResolverExamenes.Examen'])
                             ->whereHas('Persona', function ($query) use ($searh_estudiante){
                                 return $query->where('nombre', 'like', "%{$searh_estudiante}%")
@@ -711,42 +761,6 @@ class CoursesController extends Controller
         return view('admin.course.estudiantes.table_lista_estudiantes', compact('estudiantes', 'curso'))->render();
     }
 
-    /************************************************************ */
-    /************** EXAMENES DEL CURSO *********************** */
-    /************************************************************ */
-    /************************************************************ */
-
-    public function listarEstudianteResoluciones($idCurso, $idUser){
-        $estudiante = User::with('Persona')->where('idusuario', $idUser)->first();
-
-        $examenes = Examen::with('Seccion')->where('idcurso', $idCurso)->where('estado', '1')->get();
-
-        return view('admin.course.estudiantes.estudiante_examen', compact('estudiante', 'examenes', 'idCurso'));
-        // return json_encode($examenes);
-    }
-
-    public function getVerExamenResuelto($idusuario, $idexamen)
-    {
-        $examen = Examen::with(['Curso','Seccion', 'Preguntas', 'Preguntas.Alternativas'])
-        ->where('idexamen', $idexamen)
-        ->first();
-
-        // return json_encode($examen);
-
-        if ($examen) {
-            $resolver_examen = ResolverExamen::with('DetalleResolverExamen')->where('idusuario', $idusuario)->where('idexamen', $idexamen)->first();
-
-            if ($resolver_examen) {
-                # code...
-            }
-
-            return view('admin.course.examen.ver_resolucion', compact('examen' , 'resolver_examen'));
-
-        }else{
-            return 'HA OCURRIDO UN ERROR';
-        }
-    }
-
     public function listarNotasUsuario($idUser, $idCurso){
         // $notas = User::with('Persona', 'ResolverExamenes', 'ResolverExamenes.Examen', 'ResolverExamenes.Examen.Seccion', 'ResolverExamenes.Examen.Curso')->where('idusuario', $idUser)->first();
 
@@ -762,27 +776,22 @@ class CoursesController extends Controller
         return view('admin.course.estudiantes.notas_estudiante', compact('user', 'examenes')); //'notas',
     }
 
-    public function verFormExamen($idCurso){
-        $exam = [];
+    public function listarEstudianteResoluciones($idCurso, $idUser){
+        $estudiante = User::with('Persona')->where('idusuario', $idUser)->first();
 
-        $curso = Curso::where('idcurso', $idCurso)->first();
+        $examenes = Examen::with('Seccion')->where('idcurso', $idCurso)->where('estado', '1')->get();
 
-        $secciones = Seccion::where('idcurso', $idCurso)->where('estado', '1')->get();
-
-        return view('admin.course.examen.agregar_modificar_examen', compact('exam', 'curso', 'secciones'));
+        return view('admin.course.estudiantes.estudiante_examen', compact('estudiante', 'examenes', 'idCurso'));
+        // return json_encode($examenes);
     }
 
-    // public function listarExamenUsuario($idExam, $idUser = null){
-    //     $exam = Examen::where('idexamen', $idExam)->first();
-
-    //     $estudiantes = Venta::with('User', 'User.Persona')->where('idcurso', $exam->idcurso)->get();
-
-    //     return view('admin.course.estudiantes.examen_estudiante', compact('exam', 'estudiantes', 'idUser'));
-    // }
+    /************************************************************ */
+    /************** EXAMENES DEL CURSO *********************** */
+    /************************************************************ */
+    /************************************************************ */
 
     public function listarExamen($idCurso){
         $examen = Curso::with('Examenes', 'Examenes.Seccion')->where('idcurso', $idCurso)->first();
-
         $secciones = Seccion::where('idcurso', $idCurso)->where('estado', '1')->get();
 
         if ($examen) {
@@ -797,7 +806,6 @@ class CoursesController extends Controller
     // Para actualizar la tabla dinámicamente cuando se cambie el estado de algún examen
     public function obtenerExamen($idCurso){
         $examen = Curso::with('Examenes', 'Examenes.Seccion')->where('idcurso', $idCurso)->first();
-
         $secciones = Seccion::where('idcurso', $idCurso)->where('estado', '1')->get();
 
         if ($examen) {
@@ -805,15 +813,79 @@ class CoursesController extends Controller
         }else{
             return back();
         }
+    }
 
-        // return json_encode($examen);
+    public function verFormExamen($idCurso){
+        $exam = [];
+        $curso = Curso::where('idcurso', $idCurso)->first();
+        $secciones = Seccion::where('idcurso', $idCurso)->where('estado', '1')->get();
+
+        return view('admin.course.examen.agregar_modificar_examen', compact('exam', 'curso', 'secciones'));
+    }
+
+    public function mostrarExamen($idExam){
+        $exam = Examen::where('idexamen', $idExam)->first();
+        $curso = Curso::where('idcurso', $exam->idcurso)->first();
+        $secciones = Seccion::where('idcurso', $exam->idcurso)->where('estado', '1')->get();
+
+        // return json_encode($exam);
+        return view('admin.course.examen.agregar_modificar_examen', compact('exam', 'curso', 'secciones'));
+    }
+
+    public function agregarExamen(ExamenRequest $request){
+        $idexamen = $request->input('idexamen');
+
+        if ($idexamen != null || $idexamen != '') {
+            $examen = Examen::where('idexamen', $idexamen)->first();
+
+            if ($examen) {
+                $examen->titulo         = $request->input('titulo');
+                $examen->idseccion      = $request->input('idseccion');
+                $examen->descripcion    = $request->input('descripcion');
+                $examen->fecha_final    = $request->input('fecha_fin');
+                $examen->save();
+
+                // return redirect()->back()->with('success','Registro modificado satisfactoriamente'.$request->input('fecha_fin'));
+                return redirect('/admin/course/examen/'.$request->input('idcurso'))->with('success','Registro modificado satisfactoriamente'.$request->input('fecha_fin'));
+            }else{
+                // return redirect()->back()->with('error','No existe este examen');
+                return redirect('/admin/course/examen/'.$request->input('idcurso'))->with('error','No existe este examen');
+            }
+        }else{
+            $fecha = \Carbon\Carbon::parse($request->input('fecha_fin'))->format('Y-m-d H:i:s');
+
+            $examen = Examen::firstOrCreate(
+                [
+                    'idcurso'               => $request->input('idcurso'),
+                    'titulo'                => $request->input('titulo'),
+                    'idseccion'             => $request->input('idseccion'),
+                ],
+                [
+                    'titulo'                => $request->input('titulo'),
+                    'idseccion'             => $request->input('idseccion'),
+                    'fecha_final'           => $fecha,
+                    'descripcion'           => $request->input('descripcion'),
+                    'idcurso'               => $request->input('idcurso'),
+                    'estado'                => 1
+                ]
+            );
+
+            // return redirect()->back()->with('success','Registro creado satisfactoriamente'.$fecha);
+            return redirect('/admin/course/examen/'.$request->input('idcurso'))->with('success','Registro creado satisfactoriamente'.$fecha);
+        }
+    }
+
+    // Previsualización del examen
+    public function mostrarExamenCompleto($idExam){
+        $exam = Examen::with('Preguntas', 'Preguntas.Alternativas', 'Preguntas.Correcta')->where('idexamen', $idExam)->first();
+
+        // return json_encode($exam);
+        return view('admin.course.examen.examen_completo', compact('exam'));
     }
 
     public function estudianteNotaExamen($idExamen){
         $examen = Examen::where('idexamen', $idExamen)->first();
-
         $estudiantes = Venta::with('User', 'User.Persona')->where('idcurso', $examen->idcurso)->get();
-
         $resoluciones = ResolverExamen::where('idexamen', $examen->idexamen)->get();
 
         return view('admin.course.examen.notas_estudiantes', compact('examen', 'estudiantes', 'resoluciones'));
@@ -844,87 +916,45 @@ class CoursesController extends Controller
         return view('admin.course.examen.table_notas_estudiantes', compact('examen', 'estudiantes', 'resoluciones'));
     }
 
-    public function mostrarExamen($idExam){
-        $exam = Examen::where('idexamen', $idExam)->first();
+    // public function listarExamenUsuario($idExam, $idUser = null){
+    //     $exam = Examen::where('idexamen', $idExam)->first();
 
-        $curso = Curso::where('idcurso', $exam->idcurso)->first();
+    //     $estudiantes = Venta::with('User', 'User.Persona')->where('idcurso', $exam->idcurso)->get();
 
-        $secciones = Seccion::where('idcurso', $exam->idcurso)->where('estado', '1')->get();
+    //     return view('admin.course.estudiantes.examen_estudiante', compact('exam', 'estudiantes', 'idUser'));
+    // }
 
-        // return json_encode($exam);
-        return view('admin.course.examen.agregar_modificar_examen', compact('exam', 'curso', 'secciones'));
-    }
+    public function getVerExamenResuelto($idusuario, $idexamen)
+    {
+        $examen = Examen::with(['Curso','Seccion', 'Preguntas', 'Preguntas.Alternativas'])
+        ->where('idexamen', $idexamen)
+        ->first();
 
-    public function mostrarExamenCompleto($idExam){
-        $exam = Examen::with('Preguntas', 'Preguntas.Alternativas', 'Preguntas.Correcta')->where('idexamen', $idExam)->first();
+        // return json_encode($examen);
 
-        // return json_encode($exam);
-        return view('admin.course.examen.examen_completo', compact('exam'));
-    }
+        if ($examen) {
+            $resolver_examen = ResolverExamen::with('DetalleResolverExamen')->where('idusuario', $idusuario)->where('idexamen', $idexamen)->first();
 
-    public function agregarExamen(ExamenRequest $request){
-        $idexamen = $request->input('idexamen');
-
-        if ($idexamen != null || $idexamen != '') {
-
-            $examen = Examen::where('idexamen', $idexamen)->first();
-
-            if ($examen) {
-
-                $examen->titulo         = $request->input('titulo');
-                $examen->idseccion      = $request->input('idseccion');
-                $examen->descripcion    = $request->input('descripcion');
-                $examen->fecha_final    = $request->input('fecha_fin');
-                $examen->save();
-
-                // return redirect()->back()->with('success','Registro modificado satisfactoriamente'.$request->input('fecha_fin'));
-                return redirect('/admin/course/examen/'.$request->input('idcurso'))->with('success','Registro modificado satisfactoriamente'.$request->input('fecha_fin'));
-
-            }else{
-                // return redirect()->back()->with('error','No existe este examen');
-                return redirect('/admin/course/examen/'.$request->input('idcurso'))->with('error','No existe este examen');
+            if ($resolver_examen) {
+                # code...
             }
 
+            return view('admin.course.examen.ver_resolucion', compact('examen' , 'resolver_examen'));
 
         }else{
-
-            $fecha = \Carbon\Carbon::parse($request->input('fecha_fin'))->format('Y-m-d H:i:s');
-
-            $examen = Examen::firstOrCreate(
-                [
-                    'idcurso'               => $request->input('idcurso'),
-                    'titulo'                => $request->input('titulo'),
-                    'idseccion'             => $request->input('idseccion'),
-                ],
-                [
-                    'titulo'                => $request->input('titulo'),
-                    'idseccion'             => $request->input('idseccion'),
-                    'fecha_final'           => $fecha,
-                    'descripcion'           => $request->input('descripcion'),
-                    'idcurso'               => $request->input('idcurso'),
-                    'estado'                => 1
-                ]
-            );
-
-            // return redirect()->back()->with('success','Registro creado satisfactoriamente'.$fecha);
-            return redirect('/admin/course/examen/'.$request->input('idcurso'))->with('success','Registro creado satisfactoriamente'.$fecha);
-
+            return 'HA OCURRIDO UN ERROR';
         }
-
     }
 
     public function cambiarEstadoExamen($idExam, $estado) {
         $examen = Examen::where('idexamen', $idExam)->first();
-
         $examen->estado = $estado;
-
         $examen->save();
 
-        // return redirect()->back();
         return json_encode(["status" => true, "message" => "Se cambió el estado del registro"]);
     }
 
-    public function preguntasExamen($idExam){
+    public function preguntasExamen($idExam) {
         $preguntas = Examen::with('Preguntas')->where('idexamen', $idExam)->first();
 
         if ($preguntas) {
@@ -934,21 +964,19 @@ class CoursesController extends Controller
         }
     }
 
-    public function alternativasPregunta($idPreg){
+    public function alternativasPregunta($idPreg) {
         $alternativas = Pregunta::with('Alternativas')->where('idpregunta', $idPreg)->first();
 
         return json_encode($alternativas);
     }
 
-    public function agregarPregunta(PreguntasRequest $request){
+    public function agregarPregunta(PreguntasRequest $request) {
         $idpreg = $request->input('idpregunta');
 
         if($idpreg != null || $idpreg != ''){
-
             $pregunta = Pregunta::where('idpregunta', $idpreg)->first();
 
             if($pregunta){
-
                 $pregunta->nombre = $request->input('pregunta');
                 $pregunta->puntos = $request->input('puntos');
                 $pregunta->save();
@@ -959,7 +987,6 @@ class CoursesController extends Controller
                 $count_alternativa = count((array) $alternativas);
 
                 if($pregunta){
-
                     try {
                         $alternat = Alternativa::where('idpregunta', $pregunta->idpregunta)->delete();
                     }
@@ -972,7 +999,6 @@ class CoursesController extends Controller
                     }
                     
                     for ($i=0; $i < $count_alternativa ; $i++) {
-
                         $alternativa = Alternativa::updateOrCreate([
                             'idpregunta'            => $pregunta->idpregunta,
                             'nombre'                => $alternativas[$i],
@@ -985,15 +1011,12 @@ class CoursesController extends Controller
                     }
 
                 }
-
             } else {
                 return back();
             }
 
             return redirect()->back()->with('success','Registro modificado satisfactoriamente');
-
         } else {
-
             $pregunta = Pregunta::firstOrCreate(
                 [
 
@@ -1016,33 +1039,27 @@ class CoursesController extends Controller
             $count_alternativa = count((array) $alternativas);
 
             if($pregunta){
-
                 for ($i=0; $i < $count_alternativa ; $i++) {
-
                     $alternativa = Alternativa::firstOrCreate([
                         'idpregunta'            => $pregunta->idpregunta,
                         'nombre'                => $alternativas[$i],
                         'correcta'              => $correctas[$i],
                     ]);
-
                 }
-
             }
 
             return redirect()->back()->with('success','Registro creado satisfactoriamente');
-
         }
     }
 
-    public function mostrarPregunta($idPreg){
+    public function mostrarPregunta($idPreg) {
         $alternativas = Pregunta::with('Alternativas')->where('idpregunta', $idPreg)->first();
 
         return json_encode($alternativas);
     }
 
-    public function eliminarPregunta($idPreg){
+    public function eliminarPregunta($idPreg) {
         $alternat = Alternativa::where('idpregunta', $idPreg)->delete();
-
         $pregunta = Pregunta::where('idpregunta', $idPreg)->delete();
 
         return json_encode(["status" => true, "message" => "Pregunta eliminada"]);

@@ -37,8 +37,6 @@
                 </td>
             @endif
 
-            {{-- <td>{{ $item->estado }}</td> --}}
-
             <td class="text-center">
                 <a href="javascript:" onclick="mostrarComunidad({{ $item->iddocente }})" 
                     class="btn btn-light-warning font-weight-bold btn-sm" data-toggle="tooltip" 

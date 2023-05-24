@@ -1,6 +1,6 @@
 @extends('layouts.app_admin')
 
-@section('tituloPagina','Cursos')
+@section('tituloPagina', 'Preguntas del Examen')
 
 @section('styles')
     {{--<link href="{{ asset('/recursos/admin/assets/css/pages/wizard/wizard-1.css') }}" rel="stylesheet" type="text/css" />
@@ -70,6 +70,7 @@
                                 
                                 <form id="FormPreguntas" action="{{ route('preguntas_guardar') }}" method="POST">
                                     @csrf
+
                                     <input type="hidden" name="idpregunta" id="idpregunta">
                                     <input type="hidden" name="idexamen" value="{{ $preguntas->idexamen }}">
                                     <div class="row">                                    
@@ -92,7 +93,6 @@
                                         </div>
 
                                         <div class="col-md-12">
-
                                             <h3 class="card-label mt-2 text-primary"> ALTERNATIVAS </h3>
                                             
                                             <div class="row">
@@ -322,7 +322,6 @@
 
         function activar_form(flat) {
             if (flat) {
-
                 $("#btn_nuevo").hide();
 
                 $("#btn_guardar").show();
@@ -382,7 +381,6 @@
                 $("#idpregunta").val(data.idpregunta);
 
                 $.each(data.alternativas, function(index, datos){
-
                     var id = makeid();
                     contador++;
                     var estado = '';
@@ -497,7 +495,6 @@
             }
         }
 
-
         function alternativas(id){
             $.get('admin/courses/mostrar/alternativas/' + id, function(data){
                 data = JSON.parse(data);
@@ -542,17 +539,13 @@
             confirmButtonText: 'Si, eliminar!'
             }).then((result) => {
                 if (result.isConfirmed) {
-
                     $.get(`/admin/course/eliminar/pregunta/${idpregunta}`, function (data, status) {
                         data = JSON.parse(data);
 
                         console.log(data);
 
                         if (data.status == true) {
-
                             Swal.fire('Eliminado', '', 'success');
-
-
 
                             $(`#tr_${idpregunta}`).remove();
 
@@ -566,9 +559,7 @@
                             alert('Ocurrio un error, se refescara la pagina');
                             location.reload();
                         }
-
                     });
-
                 }else{
 
                 }
@@ -580,7 +571,6 @@
             if($("#pregunta").val() !='' && $("#puntos").val() != ''){
                 if(contCorr > 0){
                     $("#FormPreguntas").submit();
-
                 } else {
                     alert('Debe marcar una alternativa como correcta');
                 }
@@ -591,7 +581,6 @@
             }
 
         }
-
 
         preguntas();
     </script>

@@ -100,7 +100,7 @@
                                 </div>
                             </div> 
                         </div>
-                    @else
+                    @elseif (auth()->user()->hasRole('Docente'))
                         <div class="col-md-12 col-xs-12">
                             <div class="form-group mb-9">
                                 <div class="input-group mb-3">
@@ -108,8 +108,7 @@
                                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                                     </div>
                                     <input type="text" class="form-control" placeholder="Buscar curso..." id="buscar_curso">
-                                </div>
-                                                                                
+                                </div>                                                                                
                             </div>
                         </div>
                     @endif                     
@@ -299,24 +298,14 @@
             listar_courses(1);
 
             $("#buscar_curso").on('keyup', function () {
-                let checked = document.getElementById('switch1');
-
-                if (checked.checked) {
-                    listar_courses(0);
-                } else {              
-                    listar_courses(1);
-                }
+                let checked = document.getElementById('switch1') || 0;
+                checked == 0 ? listar_courses(1) : checked.checked ? listar_courses(0) : listar_courses(1);
             });
 
             // Mostrar u ocultar cursos deshabilitados
             $("#switch1").on('change', function () {
                 let checked = document.getElementById('switch1');
-
-                if (checked.checked) {
-                    listar_courses(0);
-                } else {             
-                    listar_courses(1);
-                }
+                checked.checked ? listar_courses(0) : listar_courses(1);
             });
 
             $(document).on("click", '.paginate-go', function(e) {

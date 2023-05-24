@@ -189,15 +189,6 @@ class PersonaController extends Controller
         //return redirect()->route('admin_personas_edit',$id)->with('success','PERSONA ACTUALIZADA SATISFACTORIAMENTE.');
     }
 
-    // public function destroy($id) {
-    //     $persona = Persona::find($id);
-    //     $persona->estado = 0;
-    //     $persona->save();
-
-    //     DB::table('users')->where('idpersona', $id)->update(['estado'=>'0']);
-    //     return json_encode(["status" => true, "message" => "Se eliminó el registro"]);
-    // }
-
     public function cambiarEstadoPersona($id, $estado) {
         $persona = Persona::find($id);
         $persona->estado = $estado;
@@ -220,7 +211,7 @@ class PersonaController extends Controller
                 if (Hash::check($clave_actual, Auth::user()->password)) {
                     $usuario = Usuario::where('idusuario', $idusuario)->first();
                     $usuario->password  = Hash::make($request->input('clave_nueva'));
-                    $usuario->save();
+                    $usuario->save();                    
                     $status  = true;
                     $message = "Contraseña actualzada.";
                 } else {
@@ -232,6 +223,7 @@ class PersonaController extends Controller
                 $message = "Contraseña nueva y la confirmación no son iguales.";
             }
         }
+
         return json_encode(["status" => $status, "message" => $message]);
     }
 
@@ -251,7 +243,6 @@ class PersonaController extends Controller
 
         $curso      = DB::table('curso')->where('idcurso', '=', $idcurso)->first();
         $usuario    = DB::table('users')->where('idpersona', '=', $idpersona)->first();
-
         $venta      = DB::table('venta')->where([['idusuario', '=', $usuario->idusuario],['idcurso', '=', $idcurso]])->first();
 
         if (empty($idventa)) {
@@ -264,15 +255,17 @@ class PersonaController extends Controller
                             'precio_referencial' => $curso->precio,
                             'estado'             => 1,
                 ]);
+
                 return json_encode(['status' => true, 'message' => 'Guardado correctamente.']);
             } else {
                 return json_encode(['status' => false, 'message' => 'EL ALUMNO YA SE ENCUENTRA REGISTRADO EN ESTE CURSO.']);
             }
         } else {
-                $asignar  = DB::table('venta')->where('idventa', $idventa)->update([
+            $asignar  = DB::table('venta')->where('idventa', $idventa)->update([
                     'idcurso'            => $idcurso, 
                     'idusuario'          => $usuario->idusuario,
             ]);
+
             return json_encode(['status' => true, 'message' => 'Actualizado correctamente.']);
         }        
     }
@@ -304,6 +297,7 @@ class PersonaController extends Controller
                         "idventa"       =>$vent->idventa
                     );
                 }
+
         return json_encode(array('data' => $data));
     }
 
@@ -321,6 +315,7 @@ class PersonaController extends Controller
                 ->where('venta.idventa','=',$idventa)
                 ->where('venta.estado','=','1')
                 ->first();
+
         return \json_encode($venta);
     }
     
@@ -335,6 +330,7 @@ class PersonaController extends Controller
             ->distinct()->limit(3)->get();
         $departamentos = DB::table('departamento')->get();
         $persona       = Persona::find($idpersona);
+
         return view('web.perfil', [
                 'departamentos' => $departamentos, 
                 'persona'       => $persona,
@@ -350,6 +346,7 @@ class PersonaController extends Controller
         $persona->iddepartamento = $request->input('iddepartamento');
         $persona->direccion      = $request->input('direccion');
         $persona->save();
+        
         return redirect()->route('perfil')->with('mensaje', 'PERFIL ACTUALIZADO CORRECTAMENTE.');
     }
 }
